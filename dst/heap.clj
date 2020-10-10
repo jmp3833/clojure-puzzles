@@ -13,10 +13,29 @@
                 (assoc (assoc heap parent-idx value) idx parent) 
                 parent-idx)))))
 
-(defn children-idx [heap idx] 
-  (let [left (inc (* 2 idx))
-        right (inc left)]
-    {:left left :right right}))
+(defn smallest-idx [heap idx]
+  (let [left-idx (inc (* 2 idx))
+        right-idx (inc left-idx)
+        parent (get heap idx)
+        local-heap [[parent idx] 
+                    [(get heap left-idx) left-idx] 
+                    [(get heap right-idx) right-idx]]]
+    (reduce 
+      #(if (< (get %1 0) (get %2 0)) %1 %2)
+      (filter 
+        #(some? (get % 0)) 
+        local-heap))))
+
+(defn heapify 
+  ([heap] (heapify heap 0))
+  ([heap idx] 
+   (if (empty? heap) heap
+     (let [smallest (smallest-idx heap idx)
+           s-idx (get smallest 1)
+           s-val (get smallest 0)]
+       (if
+         (= s-idx idx) heap
+         (heapify (assoc (assoc heap idx s-val) s-idx (get heap idx)) s-idx))))))
 
 (defn add [heap ele] 
   (if 
@@ -26,4 +45,18 @@
         (swap-until appended (dec (count appended)))
         appended))))
 
-;; (reduce #(add %1 %2) [] [3 1 5 0])
+(defn delete [heap] 
+  (let [lst (dec (count heap))
+        swap (assoc heap 0 (get heap lst))]
+    (heapify (vec (take lst swap)))))
+
+(defn sort [heap result]
+  (println "heap" heap "result" result)
+  (let [ele (first heap)
+        modified (delete heap)
+        r (conj result ele)]
+    (if 
+      (empty? modified) r
+      (recur modified r))))
+
+(sort (reduce add [] [3 0 1 0 -500]) [])
