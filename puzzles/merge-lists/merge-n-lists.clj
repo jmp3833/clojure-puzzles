@@ -29,4 +29,6 @@
                (if (some? nxt) (add hlocal {:i idx :v nxt} :v) hlocal)
                rlocal)))))
 
-(map :v (merge-w-limit '[(-1 4 7) (0 3 11) (-100 4 5) (1)] 100))
+;;Works on infinite seqs! 
+(map :v (merge-w-limit 
+          [(iterate inc 100) (iterate inc 0)] 10000))
