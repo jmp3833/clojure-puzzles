@@ -1,4 +1,6 @@
-(load-file "../../dst/heap.clj")
+(ns clj-puzzles.merge-lists.merge-n-lists)
+
+(require '[clj-puzzles.dst.heap :as heap])
 
 (defn merge-w-limit 
   ([lists limit]
@@ -8,7 +10,7 @@
        nexts
        limit
        (reduce 
-         (fn [coll ele] (add coll {:i (get ele 0) :v (get ele 1)} :v))
+         (fn [coll ele] (heap/add coll {:i (get ele 0) :v (get ele 1)} :v))
          []
          firsts) 
        [])))
@@ -20,13 +22,13 @@
      :else (let [f (first minheap)
                  idx (:i f)
                  rlocal (conj result (first minheap))
-                 hlocal (delete minheap :v)
+                 hlocal (heap/delete minheap :v)
                  nxt (first (get lists idx))
                  llocal (assoc lists idx (rest (get lists idx)))]
              (recur 
                llocal
                limit
-               (if (some? nxt) (add hlocal {:i idx :v nxt} :v) hlocal)
+               (if (some? nxt) (heap/add hlocal {:i idx :v nxt} :v) hlocal)
                rlocal)))))
 
 ;;Works on infinite seqs! 

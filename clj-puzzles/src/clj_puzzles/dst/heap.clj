@@ -1,3 +1,5 @@
+(ns clj-puzzles.dst.heap)
+
 (defn parent-idx [idx] (int (. Math floor (/ (dec idx) 2))))
 
 (defn swap-until 
