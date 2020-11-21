@@ -9,8 +9,6 @@
 (defn n-to-0 [v]
   (if (nil? v) 0 v))
 
-(declare memo)
-
 (defn btree-heist 
   ([tree] (btree-heist tree (atom {}) 0))
   ([tree memo idx]
