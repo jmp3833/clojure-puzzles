@@ -14,7 +14,7 @@
   ([tree memo idx]
    (assert (vector? tree) "tree must be a vector")
    (cond 
-     (contains? @memo idx) (get @memo idx)
+     (contains? @memo idx) (do (println memo) (get @memo idx))
      (>= idx (count tree)) 0 
      :else 
      (let [part (partial btree-heist tree memo)
