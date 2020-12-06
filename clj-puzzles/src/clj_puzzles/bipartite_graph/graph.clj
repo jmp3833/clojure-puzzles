@@ -1,27 +1,25 @@
-(ns clj-puzzles.bipartite-graph.graph)
+(ns clj-puzzles.bipartite-graph.graph
+  (:require [clj-puzzles.dst.queue :as q]))
 
-(defn add-edge [adj e1 e2]
-  (update-in adj [e1 :adj] #(if (nil? %1) [%2] (conj %1 %2)) e2))
+(defn- color [adj e red?]
+  (assoc-in adj [e :red?] red?))
 
-(defn to-adj-list [edges]
-  "accepts a 2-d vector of edges representing an undirected graph
-  and produces a hashmap based adjacency list"
-  (reduce 
-    #(add-edge (add-edge %1 (first %2) (second %2)) (second %2) (first %2))
-    {} edges))
-
-(comment 
-  (= 
-    ({1 {:adj [2 3]} 2 {:adj [4]}})
-    (to-adj-list [[1 2] [1 3] [2 4]])))
-
-(defn- color [node c] (assoc (val node) :red? c))
+(defn- enqueue-adjacent [q g adj]
+  (apply conj q (filter #(and (not (:red? (val %))) (.contains adj (first %))) g)))
 
 (defn bipartite? 
-  ([graph] (bipartite? graph (color (first graph) true)))
-  ([graph v] 
-   (println graph v)
-   (let [edges (map (partial get graph) (:adj v))]
-     edges)))
-
-
+  ([graph] (let [g' (color graph (key (first graph)) true)]
+             (bipartite? 
+               g' 
+               (q/queue [(first g')]))))
+  ([graph q] 
+   (if (empty? q) true
+     (let [v (first q)
+           adj (get-in v [1 :adj])
+           edges (map (partial get graph) adj)
+           c (get-in v [1 :red?])]
+       (cond 
+         (some #(= c (:red? %)) edges) false 
+         :else (let [g' (reduce #(color %1 %2 (not c)) graph adj)
+                     q' (enqueue-adjacent (pop q) g' adj)]
+                 (recur g' q')))))))
