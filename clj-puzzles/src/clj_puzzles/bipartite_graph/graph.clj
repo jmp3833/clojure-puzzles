@@ -8,6 +8,7 @@
   (apply conj q (filter #(and (not (:red? (val %))) (.contains adj (first %))) g)))
 
 (defn bipartite? 
+  "Graph as represented in clj-puzzles.dst.graph-undir/to-adj-list"
   ([graph] (let [g' (color graph (key (first graph)) true)]
              (bipartite? 
                g' 
