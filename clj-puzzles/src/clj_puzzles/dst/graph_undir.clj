@@ -19,17 +19,34 @@
 (defn- discover [graph e] 
   (assoc-in graph [e :discovered] true))
 
+(defn consumer [node & adjacent]
+  (partial (some #(= ) (conj adjacent node))))
+
 (defn bfs 
-  ([graph ele] (let [root (first (first graph))] (bfs (discover graph root) (q/queue [root]) ele)))
-  ([graph queue ele] 
+  "traverses graph and applies p (a fn) accepting arity [root & adj],
+  representing the currently selected node and all adjacent undiscovered nodes.
+
+  Returns true if an element in the graph satisfies predicate p, false otherwise."
+  ([graph p] 
+   (assert (fn? p) "p must be a fn of arity [root & adj]")
+   (let [root (first (first graph))] 
+               (bfs (discover graph root) (q/queue [root]) p)))
+  ([graph queue p] 
    (if (empty? queue) false
      (let [e (first queue)]
-       (if (= ele e)
-         true 
-         (let [adj (get-in graph [e :adj])
-               undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
-           (cond 
-             (some #(= ele %) undiscovered) true
-             :else (recur 
-                     (reduce discover graph undiscovered) 
-                     (apply conj (pop queue) undiscovered) ele))))))))
+       (let [adj (get-in graph [e :adj])
+             undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
+         (cond 
+           (apply p e undiscovered) true
+           :else (recur 
+                   (reduce discover graph undiscovered) 
+                   (apply conj (pop queue) undiscovered)
+                   p)))))))
+
+(defn bfs-ele [graph ele]
+  "Leverages bfs to declare if element ele is present in graph. 
+
+  Accepts graph representation produced by to-adj-list. 
+  If any root or undiscovered adjacent node is equal to ele, returns true. Otherwise false."
+
+  (bfs graph (fn [root & adj] (some #(= % ele) (conj adj root)))))
