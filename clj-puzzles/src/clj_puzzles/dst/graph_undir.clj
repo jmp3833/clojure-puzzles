@@ -16,7 +16,7 @@
     ({1 {:adj [2 3]} 2 {:adj [4]}})
     (to-adj-list [[1 2] [1 3] [2 4]])))
 
-(defn- discover [graph e] 
+(defn discover [graph e] 
   (assoc-in graph [e :discovered] true))
 
 (defn consumer [node & adjacent]
