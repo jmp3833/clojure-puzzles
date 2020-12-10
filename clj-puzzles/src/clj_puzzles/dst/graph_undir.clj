@@ -30,18 +30,18 @@
   ([graph p] 
    (assert (fn? p) "p must be a fn of arity [root & adj]")
    (let [root (first (first graph))] 
-               (bfs (discover graph root) (q/queue [root]) p)))
+     (bfs (discover graph root) (q/queue [root]) p)))
   ([graph queue p] 
    (if (empty? queue) false
-     (let [e (first queue)]
-       (let [adj (get-in graph [e :adj])
-             undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
-         (cond 
-           (apply p e undiscovered) true
-           :else (recur 
-                   (reduce discover graph undiscovered) 
-                   (apply conj (pop queue) undiscovered)
-                   p)))))))
+     (let [e (first queue)
+           adj (get-in graph [e :adj])
+           undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
+       (cond 
+         (apply p e undiscovered) true
+         :else (recur 
+                 (reduce discover graph undiscovered) 
+                 (apply conj (pop queue) undiscovered)
+                 p))))))
 
 (defn bfs-ele [graph ele]
   "Leverages bfs to declare if element ele is present in graph. 

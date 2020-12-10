@@ -12,13 +12,13 @@
   ([graph queue] 
    (if (empty? queue) true
      (let [e (first queue)
-           c (get-in graph [e :red?])]
-       (let [adj (get-in graph [e :adj])
-             undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
-         (if (some #(= c (get-in graph [% :red?])) adj) false
-           (recur 
-             (reduce #(color (g/discover %1 %2) %2 (not c)) graph undiscovered) 
-             (apply conj (pop queue) undiscovered))))))))
+           c (get-in graph [e :red?])
+           adj (get-in graph [e :adj])
+           undiscovered (filter #(not (get-in graph [% :discovered])) adj)]
+       (if (some #(= c (get-in graph [% :red?])) adj) false
+         (recur 
+           (reduce #(color (g/discover %1 %2) %2 (not c)) graph undiscovered) 
+           (apply conj (pop queue) undiscovered)))))))
 
 (comment 
   (= true (bipartite? (g/to-adj-list [[1 2] [1 3] [2 4]])))
