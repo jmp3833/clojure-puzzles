@@ -18,3 +18,16 @@
     (dosync 
       (ref-set prev (assoc @prev :next nxt))
       [l (dissoc m k)])))
+
+(defn get! [[l m] k f]
+  "Get element from cache at [k]ey, 
+  populating the cache with [f]allback otherwise"
+  (if (contains? m k) 
+    (let [v (get m k)]
+      (when (some? (:prev @v))
+        (hash-dll-del! [l m] k)
+        (hash-dll-add! [l m] k (:data @v)))
+      (:data @v))
+      (let [v (f)]
+        (hash-dll-add! [l m] k v)
+        v)))
