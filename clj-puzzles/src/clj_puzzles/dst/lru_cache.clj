@@ -24,7 +24,7 @@
       (ref-set m (dissoc @m k))
       nil)))
 
-(defn init [size]
+(defn init! [size]
   [(ref nil) (ref nil) size])
 
 (defn get! [[l m s] k f]
@@ -39,4 +39,14 @@
       (:data @v))
     (let [v (f)]
       (hash-dll-add! [l m] k v)
+      ;check size and delete here
       v)))
+
+(comment 
+  (set! *print-level* 3)                             ; recursive data structure
+  (def c (cache/init 3))                             ; []
+  (cache/get! c 1 (fn [] 10))                        ; [[1 10]]
+  (cache/get! c 1 (fn [] "cache hit! not invoked"))  ; [[1 10]]
+  (cache/get! c 2 (fn [] 20))                        ; [[2 20] [1 10]]
+  (cache/get! c 3 (fn [] 30))                        ; [[3 30] [2 20] [1 10]]
+  (cache/get! c 4 (fn [] 40)))                       ; [[4 40] [3 30] [2 20]]
