@@ -6,13 +6,13 @@
      (dosync
        (if (nil? @l)
          (do 
-           (ref-set l newnode)
-           (ref-set m {k newnode})
+           (ref-set l @newnode)
+           (ref-set m {k l})
            nil)
          (do 
            (ref-set l (assoc @l :prev newnode))
            (ref-set newnode (assoc @newnode :next l))
-           (ref-set (ref-set m (assoc @m k newnode)))
+           (ref-set m (assoc @m k newnode))
            nil))))))
 
 (defn hash-dll-del! [[l m] k]
@@ -21,15 +21,16 @@
         nxt (:next @node)]
     (dosync 
       (ref-set prev (assoc @prev :next nxt))
-      [l (ref-set m (dissoc @m k))])))
+      (ref-set m (dissoc @m k))
+      nil)))
 
-;TODO incorporate size into dst
 (defn init [size]
   [(ref nil) (ref nil) size])
 
-(defn get! [[l m] k f]
+(defn get! [[l m s] k f]
   "Get element from cache at [k]ey, 
-  populating the cache with [f]allback otherwise"
+  populating the cache with [f]allback otherwise.
+  if cache is at maximum [s]ize, evicts least recently used item"
   (if (contains? @m k) 
     (let [v (get @m k)]
       (when (some? (:prev @v))
