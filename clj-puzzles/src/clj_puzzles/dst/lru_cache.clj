@@ -1,6 +1,9 @@
 (ns clj-puzzles.dst.lru-cache)
 
 "
+- [ ] delete tail
+- [ ] delete head
+- [x] delete doesn't remove prev pointers
 - [x] reverse pointer broken on delete
 - [x] double ref on list in map  
 "
@@ -11,11 +14,11 @@
         m (:map @cache)
         newhead (ref {:prev nil :next nil :data v})]
     (dosync
-      (ref-set cache (assoc @cache :list newhead)) ;overwrite list ref with new head
+      (ref-set cache (assoc @cache :list newhead)) 
       (if (nil? @oldhead)
         (do 
-          (ref-set m {k newhead}) ; Init map with first key
-          (ref-set (:last @cache) newhead)) ;overwrite first ele in list as tail
+          (ref-set m {k newhead}) 
+          (ref-set (:last @cache) newhead)) 
         (do 
           (ref-set newhead (assoc @newhead :next oldhead)) 
           (ref-set oldhead (assoc @oldhead :prev newhead))
@@ -23,15 +26,18 @@
   nil)
 
 (defn hash-dll-del! [cache k]
-  (let [l (:list @cache) m (:map @cache)]
-    (when-let [node (get @m k)]
+  (let [curhead (:list @cache) 
+        m (:map @cache)]
+    (when-let [todelete (get @m k)]
       (dosync 
-        (if (nil? (:prev @node))
-          (ref-set l (:next @l)) ;delete front of list
+        (if (nil? (:prev @todelete)) ;head of list
+          (ref-set curhead (:next @curhead)) 
           (do 
-            (when (nil? (:next @node)) (ref-set cache (assoc @cache :last (:prev @node))))
-            (ref-set (:prev @node) (assoc (deref (:prev @node)) :next (:next @node)))))
-        (ref-set m (dissoc @m k)))))
+            (when (nil? (:next @todelete)) ;tail of list
+              (ref-set cache (assoc @cache :last (:prev @todelete))))
+            (ref-set (:prev @todelete) (assoc @(:prev @todelete) :next (:next @todelete))) ;overwrite next pointers
+            (ref-set (:next @todelete) (assoc @(:next @todelete) :prev (:prev @todelete))))) ;overwrite prev pointers
+        (ref-set m (dissoc @m k))))) ;always dissoc from map regardless of list location
   nil)
 
 (defn init! [size]
