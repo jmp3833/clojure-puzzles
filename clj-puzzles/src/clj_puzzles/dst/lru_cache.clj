@@ -1,26 +1,25 @@
 (ns clj-puzzles.dst.lru-cache)
 
 "
-- [ ] reverse pointer broken on delete
-- [ ] :last reference doesn't have prev pointer 
+- [x] reverse pointer broken on delete
+- [x] double ref on list in map  
 "
 
 (defn hash-dll-add!
   [cache k v] 
-  (let [l (:list @cache)
+  (let [oldhead (:list @cache)
         m (:map @cache)
-        newnode (ref {:prev nil :next nil :data v})]
+        newhead (ref {:prev nil :next nil :data v})]
     (dosync
-      (ref-set cache (assoc @cache :list newnode))
-      (if (nil? @l)
+      (ref-set cache (assoc @cache :list newhead)) ;overwrite list ref with new head
+      (if (nil? @oldhead)
         (do 
-          (ref-set l newnode)
-          (ref-set m {k l})
-          (ref-set (:last @cache) l))
+          (ref-set m {k newhead}) ; Init map with first key
+          (ref-set (:last @cache) newhead)) ;overwrite first ele in list as tail
         (do 
-          (ref-set newnode (assoc @newnode :next l))
-          (ref-set l (assoc @l :prev newnode))
-          (ref-set m (assoc @m k newnode))))))
+          (ref-set newhead (assoc @newhead :next oldhead)) 
+          (ref-set oldhead (assoc @oldhead :prev newhead))
+          (ref-set m (assoc @m k newhead))))))
   nil)
 
 (defn hash-dll-del! [cache k]
