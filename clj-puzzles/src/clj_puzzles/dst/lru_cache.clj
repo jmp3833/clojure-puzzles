@@ -7,6 +7,11 @@
 - [x] reverse pointer broken on delete
 - [x] double ref on list in map  
 "
+(defn setup []
+  (def c (init! 3)) 
+  (get! c 1 (fn [] 10))                        
+  (get! c 2 (fn [] 20))                       
+  (get! c 3 (fn [] 30)))
 
 (defn hash-dll-add!
   [cache k v] 
@@ -18,7 +23,7 @@
       (if (nil? @oldhead)
         (do 
           (ref-set m {k newhead}) 
-          (ref-set (:last @cache) newhead)) 
+          (ref-set cache (assoc @cache :last newhead))) 
         (do 
           (ref-set newhead (assoc @newhead :next oldhead)) 
           (ref-set oldhead (assoc @oldhead :prev newhead))
@@ -30,15 +35,21 @@
         m (:map @cache)]
     (when-let [todelete (get @m k)]
       (dosync 
-        (if (nil? (:prev @todelete)) ;head of list
-          (ref-set curhead (:next @curhead)) 
+        (cond
+          (and (nil? (:prev @todelete)) (nil? (:next @todelete))) (ref-set curhead nil)
+          (nil? (:prev @todelete)) 
           (do 
-            (when (nil? (:next @todelete)) ;tail of list
-              (ref-set cache (assoc @cache :last (:prev @todelete))))
-            (ref-set (:prev @todelete) (assoc @(:prev @todelete) :next (:next @todelete))) ;overwrite next pointers
-            (ref-set (:next @todelete) (assoc @(:next @todelete) :prev (:prev @todelete))))) ;overwrite prev pointers
-        (ref-set m (dissoc @m k))))) ;always dissoc from map regardless of list location
-  nil)
+            (ref-set cache (assoc @cache :list (:next @todelete)))
+            (ref-set (:next @todelete) (assoc @(:next @todelete) :prev nil)))
+          (nil? (:next @todelete)) 
+          (do 
+            (ref-set cache (assoc @cache :last (:prev @todelete)))
+            (ref-set (:prev @todelete) (assoc @(:prev @todelete) :next (:next @todelete))))
+          :else 
+          (do
+            (ref-set (:prev @todelete) (assoc @(:prev @todelete) :next (:next @todelete))) 
+            (ref-set (:next @todelete) (assoc @(:next @todelete) :prev (:prev @todelete))))))
+      nil)))
 
 (defn init! [size]
   (ref {:list (ref nil) :map (ref nil) :last (ref nil) :size size}))
@@ -61,22 +72,13 @@
         v))))
 
 (defn str-list 
-  ([l] (str-list l ""))
-  ([l sb] 
+  ([l accessor] (str-list l "" accessor))
+  ([l sb accessor] 
    (let [node @l
          v (str sb (:data node))]
-     (if (nil? (:next node)) 
+     (if (nil? (accessor node)) 
        v
-       (recur (:next node) (str v "<->"))))))
-
-(defn str-list-tail
-  ([l] (str-list-tail l ""))
-  ([l sb] 
-   (let [node @l
-         v (str sb (:data node))]
-     (if (nil? (:prev node)) 
-       v
-       (recur (:prev node) (str v "<->"))))))
+       (recur (accessor node) (str v "<->") accessor)))))
 
 (comment 
   (set! *print-level* 3)                             ; recursive data structure :'(
