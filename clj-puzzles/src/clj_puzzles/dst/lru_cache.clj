@@ -1,23 +1,10 @@
 (ns clj-puzzles.dst.lru-cache)
 
-"
-- [ ] delete tail
-- [ ] delete head
-- [x] delete doesn't remove prev pointers
-- [x] reverse pointer broken on delete
-- [x] double ref on list in map  
-"
-(defn setup []
-  (def c (init! 3)) 
-  (get! c 1 (fn [] 10))                        
-  (get! c 2 (fn [] 20))                       
-  (get! c 3 (fn [] 30)))
-
 (defn hash-dll-add!
   [cache k v] 
   (let [oldhead (:list @cache)
         m (:map @cache)
-        newhead (ref {:prev nil :next nil :data v})]
+        newhead (ref {:prev nil :next nil :data v :k k})]
     (dosync
       (ref-set cache (assoc @cache :list newhead)) 
       (if (nil? @oldhead)
@@ -31,10 +18,10 @@
   nil)
 
 (defn hash-dll-del! [cache k]
-  (let [curhead (:list @cache) 
-        m (:map @cache)]
-    (when-let [todelete (get @m k)]
-      (dosync 
+  (dosync
+    (let [curhead (:list @cache) 
+          m (:map @cache)]
+      (when-let [todelete (get @m k)]
         (cond
           (and (nil? (:prev @todelete)) (nil? (:next @todelete))) (ref-set curhead nil)
           (nil? (:prev @todelete)) 
@@ -49,7 +36,8 @@
           (do
             (ref-set (:prev @todelete) (assoc @(:prev @todelete) :next (:next @todelete))) 
             (ref-set (:next @todelete) (assoc @(:next @todelete) :prev (:prev @todelete))))))
-      nil)))
+      (ref-set m (dissoc @m k))))
+  nil)
 
 (defn init! [size]
   (ref {:list (ref nil) :map (ref nil) :last (ref nil) :size size}))
@@ -67,9 +55,12 @@
           (hash-dll-add! c k (:data @v)))
         (:data @v))
       (let [v (f)]
+        (when (<= (:size @c) (count @m))
+          (hash-dll-del! c (:k @(:last @c))))
         (hash-dll-add! c k v)
-        ;TODO honor size and delete final ele here (if required)
         v))))
+
+;print helpers and test cases
 
 (defn str-list 
   ([l accessor] (str-list l "" accessor))
@@ -80,12 +71,22 @@
        v
        (recur (accessor node) (str v "<->") accessor)))))
 
+(defn str-map [m]
+  (map (fn [[k v]] (str k "->" (:data @v))) m))
+
 (comment 
   (set! *print-level* 3)                             ; recursive data structure :'(
 
-  (def c (cache/init 3))                             ; []
+  (def c (cache/init! 3))                            ; []
   (cache/get! c 1 (fn [] 10))                        ; [[1 10]]
   (cache/get! c 1 (fn [] "cache hit! not invoked"))  ; [[1 10]]
   (cache/get! c 2 (fn [] 20))                        ; [[2 20] [1 10]]
   (cache/get! c 3 (fn [] 30))                        ; [[3 30] [2 20] [1 10]]
   (cache/get! c 4 (fn [] 40)))                       ; [[4 40] [3 30] [2 20]]
+
+(comment 
+  (defn setup []
+    (def c (init! 3)) 
+    (get! c 1 (fn [] 10))                        
+    (get! c 2 (fn [] 20))                       
+    (get! c 3 (fn [] 30))))
