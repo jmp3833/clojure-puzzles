@@ -1,12 +1,12 @@
 (ns clj-puzzles.dst.lru-cache)
 
-(defn hash-dll-add!
+(defn- hash-dll-add!
   [cache k v] 
-  (let [oldhead (:list @cache)
+  (let [oldhead (:head @cache)
         m (:map @cache)
         newhead (ref {:prev nil :next nil :data v :k k})]
     (dosync
-      (ref-set cache (assoc @cache :list newhead)) 
+      (ref-set cache (assoc @cache :head newhead)) 
       (if (nil? @oldhead)
         (do 
           (ref-set m {k newhead}) 
@@ -17,16 +17,16 @@
           (ref-set m (assoc @m k newhead))))))
   nil)
 
-(defn hash-dll-del! [cache k]
+(defn- hash-dll-del! [cache k]
   (dosync
-    (let [curhead (:list @cache) 
+    (let [curhead (:head @cache) 
           m (:map @cache)]
       (when-let [todelete (get @m k)]
         (cond
           (and (nil? (:prev @todelete)) (nil? (:next @todelete))) (ref-set curhead nil)
           (nil? (:prev @todelete)) 
           (do 
-            (ref-set cache (assoc @cache :list (:next @todelete)))
+            (ref-set cache (assoc @cache :head (:next @todelete)))
             (ref-set (:next @todelete) (assoc @(:next @todelete) :prev nil)))
           (nil? (:next @todelete)) 
           (do 
@@ -40,14 +40,14 @@
   nil)
 
 (defn init! [size]
-  (ref {:list (ref nil) :map (ref nil) :last (ref nil) :size size}))
+  (ref {:head (ref nil) :map (ref nil) :last (ref nil) :size size}))
 
 (defn get! [c k f]
   "Get element from cache at [k]ey, 
   populating the cache with [f]allback otherwise.
   if cache is at maximum size, evicts least recently used item"
   (let [m (:map @c)
-        l (:list @c)]
+        l (:head @c)]
     (if (contains? @m k) 
       (let [v (get @m k)]
         (when (some? (:prev @v))
