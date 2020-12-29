@@ -27,8 +27,6 @@
       (and node? noleft? noright?) nil 
       (and node? noleft?) (assoc tree :l nil :r nil :d (get-in tree [:l :d])) 
       (and node? noright?) (assoc tree :l nil :r nil :d (get-in tree [:r :d])) 
-      node?
-      (let [sm (subtree-min (:r tree))]
-        (assoc (delete tree sm) :d sm))
+      node? (let [sm (subtree-min (:r tree))] (assoc (delete tree sm) :d sm))
       lte? (assoc tree :l (delete (:l tree) data))
       :else (assoc tree :r (delete (:r tree) data)))))
