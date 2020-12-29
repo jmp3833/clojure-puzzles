@@ -12,20 +12,23 @@
          :else (assoc tree :r (insert (:r tree) data)))
        newnode))))
 
-(defn delete-subtree-min [tree]
-  (if-let [l (:l tree)] 
-    (if-let [ll (:l l)]
-      (assoc l :l (delete-subtree-min l))
-      (assoc tree :l nil)) ;how to extract min value here?
-      nil))
+(defn subtree-min [tree]
+  (if-let [l (:l tree)] (if-let [ll (:l l)] (subtree-min l) (:d l)) (:d tree)))
 
 (defn delete [tree data]
-  (if-let [head (:d tree)]
+  (let [head (:d tree)
+        noleft? (nil? (:l tree))
+        noright? (nil? (:r tree))
+        node? (= data head)
+        lte? (<= data head)
+        gt? (not lte?)]
     (cond
-      (and (= data head) (nil? (:l tree)) (nil? (:r tree))) nil
-      (and (= data head) (nil? (:l tree))) (assoc tree :l nil :r nil :d (get-in tree [:l :d])) 
-      (and (= data head) (nil? (:r tree))) (assoc tree :l nil :r nil :d (get-in tree [:r :d])) 
-      (= data head) (let [])
-      :else nil)))
-      ;grab smallest element from right subtree and replace with node to delete
-
+      (nil? head) nil
+      (and node? noleft? noright?) nil 
+      (and node? noleft?) (assoc tree :l nil :r nil :d (get-in tree [:l :d])) 
+      (and node? noright?) (assoc tree :l nil :r nil :d (get-in tree [:r :d])) 
+      node?
+      (let [sm (subtree-min (:r tree))]
+        (assoc (delete tree sm) :d sm))
+      lte? (assoc tree :l (delete (:l tree) data))
+      :else (assoc tree :r (delete (:r tree) data)))))
