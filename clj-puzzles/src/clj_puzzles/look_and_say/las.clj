@@ -1,8 +1,7 @@
 (ns clj-puzzles.look-and-say.las)
 
 (defn las-segment 
-  ([s] 
-   (las-segment s nil 0 []))
+  ([s] (las-segment s nil 0 []))
   ([s prev prev-freq result]
    (cond 
      (empty? s) (conj result prev-freq prev)
@@ -13,5 +12,4 @@
   ([n]
    (cond 
      (= n 0) [1]
-     :else 
-     (las-segment (las (dec n))))))
+     :else (las-segment (las (dec n))))))
